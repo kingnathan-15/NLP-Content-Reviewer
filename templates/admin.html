@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <script src="{{ url_for('static', filename='toggle.js') }}"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Admin Dashboard</h1>
+        <p>Welcome, Admin! Here you can manage the course evaluations.</p>
+        <a href="/">Return to User Input</a>
+    </div>
+    
+    <!-- Two Column Dashboard Layout -->
+    <div class="dashboard-grid">
+        <!-- Left Card: Reviews Table -->
+        <div class="dashboard-card">
+            <h3>Recent Course Reviews</h3>
+            <div class="reviews-table-container">
+                {% if reviews%}
+                <table class="reviews-table">
+                    <thead>
+                        <tr>
+                            <th>Feedback</th>
+                            <th>Topic</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for review in reviews %}
+                    <tr>
+                        <td>{{ review[1] }}</td>
+                        <td><span class="topic-badge">{{ topic_labels.get(review[2], "Unknown") }}</span></td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                    <p style="text-align: center; color: #b8c5d6;">No reviews found.</p>
+                {% endif %}
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="topicsChart"></canvas>
+            </div>
+
+        </div>
+        
+        <!-- Right Card: Sentiment Analysis -->
+        <div class="dashboard-card">
+            <h3>Sentiment Analysis</h3>
+            
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h4 id="totalReviews">0</h4>
+                    <p>Total Reviews</p>
+                </div>
+                <div class="stat-card">
+                    <h4 id="positiveReviews">0</h4>
+                    <p>Positive</p>
+                </div>
+                <div class="stat-card">
+                    <h4 id="neutralReviews">0</h4>
+                    <p>Neutral</p>
+                </div>
+                <div class="stat-card">
+                    <h4 id="negativeReviews">0</h4>
+                    <p>Negative</p>
+                </div>
+            </div>
+            
+            <!-- Pie Chart -->
+            <canvas id="evaluationChart"></canvas>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Evaluation Page</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Your Course Evaluation</h1>
+        <form id="review_form" method="post" action="/submit-review">
+            <label for="text-input">What are your future recommendations regarding the course?</label><br>
+            <textarea id="text-input" name="text-input" rows="10" cols="50"></textarea><br><br>
+            <input type="submit" value="Send your Review">
+        </form>
+    </div>
+    <a href="/admin">Go to Admin Dashboard</a>
+</body>
+</html>
