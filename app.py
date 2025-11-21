@@ -85,8 +85,6 @@ def get_topic_distribution():
     return df_topics
 
 
-# --- View Functions ---
-
 def show_review_form():
     """Displays the user review submission form."""
     st.title("📝 Course Evaluation Submission")
@@ -112,9 +110,9 @@ def show_review_form():
             # 1. Analyze review
             result = get_topic_and_sentiment_for_comment(review_text)
             
-            # result is (topic_id, sentiment_int, topic_confidence, sentiment_confidence)
-            if result:
-                topic_id, sentiment_int, _, _ = result[:4]
+            # FIX: Check if result is None before unpacking
+            if result is not None:
+                topic_id, sentiment_int, topic_confidence, sentiment_confidence = result
                 
                 # 2. Insert into database
                 insert_review(review_text, topic_id, sentiment_int)
@@ -128,10 +126,13 @@ def show_review_form():
                     **Your Feedback Analysis:**
                     - **Predicted Topic:** {TOPIC_LABELS.get(topic_id, 'Unknown')}
                     - **Predicted Sentiment:** {SENTIMENT_LABELS.get(sentiment_int, 'Unknown')}
+                    - **Topic Confidence:** {topic_confidence:.1%}
+                    - **Sentiment Confidence:** {sentiment_confidence:.1%}
                 """)
             else:
-                st.error("Could not process the review. Please check the review text.")
+                st.error("Could not process the review. Please check that the NLP models are properly loaded and the review text is valid.")
 
+                
 def show_admin_dashboard():
     """Displays the administrative dashboard with review analysis."""
     st.title("📊 Admin Dashboard")
