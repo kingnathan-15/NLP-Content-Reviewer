@@ -46,11 +46,11 @@ try:
 
     # Load Sentiment Analysis (SA) components
     print("Loading sentiment model...")
-    sa_model = joblib.load('./model/sentiment_classifier.pkl')
+    sa_model = joblib.load('./model/sa_model.pkl')
     print("✓ Sentiment model loaded successfully")
     
     print("Loading sentiment vectorizer...")
-    sa_tfidf = joblib.load('./model/topic_vectorizer_using_tfidf.pkl')
+    sa_tfidf = joblib.load('./model/sa_vectorizer.pkl')
     print("✓ Sentiment vectorizer loaded successfully")
     
     print("Loading topic labels...")
@@ -130,8 +130,13 @@ def get_prediction_and_confidence(text, best_model, tfidf):
         pred = best_model.predict(text_vector)[0]
         proba = best_model.predict_proba(text_vector).max()
 
-        print(f"✓ Sentiment prediction: {pred}, confidence: {proba:.3f}")
-        return pred, round(proba, 3)
+        print(f"✓ Sentiment prediction RAW: {pred} (type: {type(pred)}), confidence: {proba:.3f}")
+        
+        # Convert prediction to int to ensure consistency
+        pred_int = int(pred)
+        print(f"✓ Sentiment prediction INT: {pred_int}")
+        
+        return pred_int, round(proba, 3)
         
     except Exception as e:
         print(f"❌ Prediction error in get_prediction_and_confidence: {str(e)}")

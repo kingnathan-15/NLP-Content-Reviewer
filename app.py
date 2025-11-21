@@ -16,12 +16,20 @@ TOPIC_LABELS = {
     2: "Miscellaneous comments regarding CATs and explanations of content",
     3: "Negative opinions related to the amount of content within the slides used in teaching"
 }
+
 SENTIMENT_LABELS = {
     0: "Negative",
     1: "Neutral",
     2: "Positive"
 }
 
+def get_sentiment_label(sentiment_int):
+    """Safely get sentiment label with debugging."""
+    label = SENTIMENT_LABELS.get(sentiment_int, f"Unknown (value: {sentiment_int})")
+    if "Unknown" in label:
+        print(f"⚠️ WARNING: Unexpected sentiment value: {sentiment_int} (type: {type(sentiment_int)})")
+    return label
+    
 # Use Streamlit's cache to initialize the database only once.
 @st.cache_resource
 def setup_database():
@@ -132,7 +140,6 @@ def show_review_form():
             else:
                 st.error("Could not process the review. Please check that the NLP models are properly loaded and the review text is valid.")
 
-                
 def show_admin_dashboard():
     """Displays the administrative dashboard with review analysis."""
     st.title("📊 Admin Dashboard")
