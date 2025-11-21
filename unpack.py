@@ -6,15 +6,16 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 
-# --- NLTK Resource Downloads (Fix for the missing resource error) ---
+# --- NLTK Resource Downloads (Addressing the Punkt_tab Error) ---
 # Ensure necessary NLTK packages are downloaded
-nltk.download('stopwords')
-# FIX: The NLTK error specifically requested 'punkt_tab'. This might be a typo
-# in the underlying library's error message, as 'punkt' is the standard
-# dependency for word_tokenize. We'll include 'punkt' as a safe measure.
-# If 'punkt_tab' is a custom resource, the error might persist until the source is identified.
-# However, we will assume 'punkt' is the dependency needed for tokenization.
-nltk.download('punkt')
+try:
+    nltk.download('stopwords')
+    # FIX: Explicitly download 'punkt' and 'punkt_tab' as requested by the error message.
+    # We wrap this in a try/except because the download itself can fail in restricted environments.
+    nltk.download('punkt')
+    nltk.download('punkt_tab')
+except Exception as e:
+    print(f"Warning: NLTK download failed, possibly due to environment restrictions: {e}")
 
 
 # --- Model and Configuration Loading ---
@@ -33,8 +34,10 @@ try:
     
 except FileNotFoundError as e:
     print(f"Error loading model files: {e}. Ensure all model files are in the './model' directory.")
-    # Exit or use dummy models if production requires it.
+    # Assign dummy variables if models fail to load, to prevent subsequent NameErrors
+    lda, vectorizer, sa_model, sa_tfidf, topic_labels = None, None, None, None, {}
 
+# Initialize global resources
 stop_words = set(stopwords.words('english'))
 stemmer = PorterStemmer()
 
@@ -48,7 +51,13 @@ def clean_text_for_sa(text):
     text = re.sub(r'[^a-zA-Z\s]', '', text)
 
     # Tokenize and remove stopwords
-    tokens = nltk.word_tokenize(text)
+    # Added a check for NLTK resource availability
+    try:
+        tokens = nltk.word_tokenize(text)
+    except LookupError:
+        print("Warning: NLTK Punkt resource missing. Falling back to simple split.")
+        tokens = text.split()
+
     filtered = [word for word in tokens if word not in stop_words]
 
     # Apply stemming
@@ -58,6 +67,11 @@ def clean_text_for_sa(text):
 
 def get_prediction_and_confidence(text, best_model, tfidf):
     """Predicts sentiment for a given text and returns prediction and confidence."""
+    # Check if models were loaded
+    if best_model is None or tfidf is None:
+        print("Prediction error: Sentiment models not loaded.")
+        return 1, 0.0 # Default to Neutral with 0 confidence
+        
     try:
         # Clean and vectorize text
         cleaned_text = clean_text_for_sa(text)
@@ -90,7 +104,11 @@ def get_topic_and_sentiment_for_comment(comment: str, top_n_words: int = 10):
         tuple: (topic_id, sentiment_int, topic_confidence, sentiment_confidence)
         None: If any critical error occurs during analysis.
     """
-    # FIX: Use a general try-except block to handle NLTK or other runtime errors
+    # Check if models were loaded (Handles FileNotFoundError from above)
+    if lda is None or vectorizer is None or sa_model is None or sa_tfidf is None:
+        print("Analysis error: One or more NLP models failed to load.")
+        return None
+        
     try:
         # 1. Topic Analysis
         cleaned = clean_text(comment)
@@ -103,8 +121,6 @@ def get_topic_and_sentiment_for_comment(comment: str, top_n_words: int = 10):
         topic_id = int(np.argmax(topic_probs))
         topic_confidence = round(topic_probs.max(), 3)
 
-        # (Topic words extraction section is omitted but assumed correct)
-        
         # 2. Sentiment Analysis
         sentiment_int, sentiment_confidence = get_prediction_and_confidence(
             comment, sa_model, sa_tfidf
@@ -114,7 +130,6 @@ def get_topic_and_sentiment_for_comment(comment: str, top_n_words: int = 10):
         return (topic_id, sentiment_int, topic_confidence, sentiment_confidence)
     
     except Exception as e:
-        # Catch any error (including the NLTK error) and print a message
+        # Catch any residual analysis error and return None
         print(f"Critical error in get_topic_and_sentiment_for_comment: {str(e)}")
-        # Return None to be safely caught by the 'if result:' check in app.py
         return None
