@@ -118,46 +118,19 @@ def show_review_form():
             # 1. Analyze review
             result = get_topic_and_sentiment_for_comment(review_text)
             
-            # Display raw result for debugging
-            st.write("**DEBUG INFO:**")
-            st.write(f"Raw result: {result}")
-            st.write(f"Result type: {type(result)}")
-            
-            # FIX: Check if result is None before unpacking
+            # Check if result is None before unpacking
             if result is not None:
                 topic_id, sentiment_int, topic_confidence, sentiment_confidence = result
                 
-                # Detailed debugging
-                st.write("**Unpacked values:**")
-                st.write(f"- topic_id: {topic_id} (type: {type(topic_id).__name__})")
-                st.write(f"- sentiment_int: {sentiment_int} (type: {type(sentiment_int).__name__})")
-                st.write(f"- topic_confidence: {topic_confidence}")
-                st.write(f"- sentiment_confidence: {sentiment_confidence}")
-                
-                # Check what's in SENTIMENT_LABELS
-                st.write(f"**Available sentiment labels:** {SENTIMENT_LABELS}")
-                st.write(f"**Is {sentiment_int} in SENTIMENT_LABELS?** {sentiment_int in SENTIMENT_LABELS}")
-                
-                # Convert sentiment_int to standard int if it's a numpy type
-                try:
-                    sentiment_int = int(sentiment_int)
-                    st.write(f"**Converted sentiment_int:** {sentiment_int} (type: {type(sentiment_int).__name__})")
-                except Exception as e:
-                    st.error(f"Error converting sentiment_int: {e}")
-                
                 # 2. Insert into database
-                try:
-                    insert_review(review_text, topic_id, sentiment_int)
-                    st.success("✓ Review inserted into database")
-                except Exception as e:
-                    st.error(f"Error inserting review: {e}")
+                insert_review(review_text, topic_id, sentiment_int)
                 
                 # 3. Clear data caches so the admin dashboard updates immediately
                 st.cache_data.clear()
                 
                 # Get labels safely
                 topic_label = TOPIC_LABELS.get(topic_id, f"Unknown Topic (ID: {topic_id})")
-                sentiment_label = SENTIMENT_LABELS.get(sentiment_int, f"Unknown Sentiment (value: {sentiment_int}, type: {type(sentiment_int).__name__})")
+                sentiment_label = SENTIMENT_LABELS.get(sentiment_int, f"Unknown Sentiment (value: {sentiment_int})")
                 
                 # 4. Success message
                 st.success("🎉 Thank you for your review!")

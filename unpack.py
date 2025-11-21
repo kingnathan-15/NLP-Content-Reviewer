@@ -115,6 +115,13 @@ def get_prediction_and_confidence(text, best_model, tfidf):
         print("❌ Prediction error: Sentiment models not loaded.")
         return 1, 0.0 # Default to Neutral with 0 confidence
         
+    # Mapping from string predictions to integers
+    SENTIMENT_STRING_TO_INT = {
+        'negative': 0,
+        'neutral': 1,
+        'positive': 2
+    }
+    
     try:
         # Clean and vectorize text
         cleaned_text = clean_text_for_sa(text)
@@ -132,9 +139,14 @@ def get_prediction_and_confidence(text, best_model, tfidf):
 
         print(f"✓ Sentiment prediction RAW: {pred} (type: {type(pred)}), confidence: {proba:.3f}")
         
-        # Convert prediction to int to ensure consistency
-        pred_int = int(pred)
-        print(f"✓ Sentiment prediction INT: {pred_int}")
+        # Convert string prediction to int
+        if isinstance(pred, str):
+            pred_lower = pred.lower().strip()
+            pred_int = SENTIMENT_STRING_TO_INT.get(pred_lower, 1)  # Default to neutral if unknown
+            print(f"✓ Converted string '{pred}' to int: {pred_int}")
+        else:
+            pred_int = int(pred)
+            print(f"✓ Sentiment prediction INT: {pred_int}")
         
         return pred_int, round(proba, 3)
         
