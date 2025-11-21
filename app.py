@@ -1,73 +1,98 @@
-from flask import Flask, request, jsonify, render_template
-import joblib
+import streamlit as st
 import pandas as pd
 import warnings
 from unpack import get_topic_and_sentiment_for_comment
+from database import (
+    init_db, insert_review, get_all_reviews, populate_original_data,
+    sentiment_retrieval, limit_reviews
+)
 
-from database import init_db, insert_review, get_all_reviews, populate_original_data, sentiment_retrieval, limit_reviews
-warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore")
 
-app = Flask(__name__)
+# -----------------------------
+# INITIAL DATABASE SETUP
+# -----------------------------
+init_db()
+populate_original_data()
 
-with app.app_context():
-    # this runs once at startup
-    init_db() 
-    populate_original_data()
+topic_labels = {
+    0: "Need for additional guidance from lecturer during labs",
+    1: "Practical applications of taught content",
+    2: "Miscellaneous comments regarding CATs and explanations of content",
+    3: "Negative opinions related to the amount of content within the slides used in teaching"
+}
 
-@app.route('/')
-def home():
-    return render_template('interface.html')
+# -----------------------------
+# STREAMLIT UI
+# -----------------------------
+st.set_page_config(page_title="NLP Content Reviewer", layout="wide")
 
-@app.route('/admin')
-def admin():
-    topic_labels = {
-        0: "Need for additional guidance from lecturer during labs",
-        1: "Practical applications of taught content",
-        2: "Miscellaneous comments regarding CATs and explanations of content",
-        3: "Negative opinions related to the amount of content within the slides used in teaching"
-    }
-    
-    details = limit_reviews()
-    
-    return render_template('admin.html', reviews=details, topic_labels=topic_labels)
+st.title("NLP Content Reviewer")
 
-@app.route("/api/sentiments")
-def get_sentiments():
-    data = sentiment_retrieval()
-    print("Sentiment data retrieved:", data)
-    return jsonify(data)
+tabs = st.tabs(["Submit Review", "Admin Dashboard"])
 
-@app.route("/api/topics")
-def get_topics():
-    details = get_all_reviews()
-    topic_counts = pd.Series([review['topic'] for review in details]).value_counts().to_dict()
-    
-    topic_labels = {
-        0: "Need for additional guidance from lecturer during labs",
-        1: "Practical applications of taught content",
-        2: "Miscellaneous comments regarding CATs and explanations of content",
-        3: "Negative opinions related to the amount of content within the slides used in teaching"
-    }
-    
-    topics_data = {
-        'labels': [topic_labels.get(topic_id, "Unknown Topic") for topic_id in topic_counts.keys()],
-        'counts': list(topic_counts.values())
-    }
-    
-    print("Topic data retrieved:", topics_data)
-    return jsonify(topics_data)
+# =============================================================
+# TAB 1: USER SUBMISSION PAGE
+# =============================================================
+with tabs[0]:
+    st.header("Submit a Review")
+    review_text = st.text_area("Enter your comment:", height=150)
 
+    if st.button("Submit"):
+        if review_text.strip():
+            result = get_topic_and_sentiment_for_comment(review_text)
 
-@app.route('/submit-review', methods=['POST'])
-def submit():
-    if request.method == 'POST':
-        review = request.form['text-input']
-        result = get_topic_and_sentiment_for_comment(review)
-        print("Review processed:", result)
-        insert_review(review, result['topic_id'], result['sentiment'])
-        
-    return render_template('next_user.html')
+            insert_review(
+                review_text,
+                result["topic_id"],
+                result["sentiment"]
+            )
 
+            st.success("Your review has been submitted!")
+            st.write("### Topic Prediction:")
+            st.write(topic_labels[result["topic_id"]])
 
-# if __name__ == '__main__':
-#     app.run(host='0.0.0.0', port=5000, debug=True)
+            st.write("### Sentiment:")
+            st.write(result["sentiment"])
+        else:
+            st.error("Please enter some text.")
+
+# =============================================================
+# TAB 2: ADMIN PAGE
+# =============================================================
+with tabs[1]:
+    st.header("Admin Dashboard")
+
+    # ---- Show limited reviews ----
+    st.subheader("Latest Reviews")
+    reviews = limit_reviews()
+    if reviews:
+        df_reviews = pd.DataFrame(reviews)
+        df_reviews["topic"] = df_reviews["topic"].apply(
+            lambda t: topic_labels.get(t, "Unknown")
+        )
+        st.dataframe(df_reviews)
+    else:
+        st.info("No reviews found.")
+
+    # ---- Sentiment Pie Chart ----
+    st.subheader("Sentiment Distribution")
+    sentiments = sentiment_retrieval()
+    if sentiments:
+        df_sent = pd.DataFrame(sentiments)
+        st.bar_chart(df_sent.set_index("sentiment"))
+    else:
+        st.info("Sentiment data not available.")
+
+    # ---- Topic Distribution ----
+    st.subheader("Topic Distribution")
+    all_reviews = get_all_reviews()
+    if all_reviews:
+        topic_counts = pd.Series([r["topic"] for r in all_reviews]).value_counts()
+        df_topics = pd.DataFrame({
+            "Topic": [topic_labels[int(t)] for t in topic_counts.index],
+            "Count": topic_counts.values
+        })
+        st.bar_chart(df_topics.set_index("Topic"))
+    else:
+        st.info("Topic data not available.")
