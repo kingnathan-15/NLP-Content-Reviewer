@@ -26,8 +26,8 @@ try:
     vectorizer = joblib.load('./model/topic_vectorizer.pkl')
 
     # Load Sentiment Analysis (SA) components (assuming they are used elsewhere)
-    sa_model = joblib.load('./model/sa_model.pkl')
-    sa_tfidf = joblib.load('./model/sa_vectorizer.pkl')
+    sa_model = joblib.load('./model/sentiment_classifier.pkl')
+    sa_tfidf = joblib.load('./model/topic_vectorizer_using_tfidf.pkl')
     
     with open('./model/topic_labels.json', 'r', encoding='utf-8') as f:
         topic_labels = json.load(f)
