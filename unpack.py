@@ -7,13 +7,14 @@ from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 
 # --- NLTK Resource Downloads (Addressing the Punkt_tab Error) ---
-# Ensure necessary NLTK packages are downloaded
+# NOTE: The NLTK error keeps causing runtime issues in the deployment environment
+# We are keeping the downloads here but will attempt to bypass the dependency
+# on `nltk.word_tokenize` below to resolve the persistent 'punkt_tab' error.
 try:
     nltk.download('stopwords')
-    # FIX: Explicitly download 'punkt' and 'punkt_tab' as requested by the error message.
-    # We wrap this in a try/except because the download itself can fail in restricted environments.
+    # Keeping these downloads but relying on simple split() below
     nltk.download('punkt')
-    nltk.download('punkt_tab')
+    nltk.download('punkt_tab') 
 except Exception as e:
     print(f"Warning: NLTK download failed, possibly due to environment restrictions: {e}")
 
@@ -51,12 +52,8 @@ def clean_text_for_sa(text):
     text = re.sub(r'[^a-zA-Z\s]', '', text)
 
     # Tokenize and remove stopwords
-    # Added a check for NLTK resource availability
-    try:
-        tokens = nltk.word_tokenize(text)
-    except LookupError:
-        print("Warning: NLTK Punkt resource missing. Falling back to simple split.")
-        tokens = text.split()
+    # FIX: Replace nltk.word_tokenize with simple string split() to bypass the 'punkt_tab' error
+    tokens = text.split() 
 
     filtered = [word for word in tokens if word not in stop_words]
 
@@ -75,6 +72,11 @@ def get_prediction_and_confidence(text, best_model, tfidf):
     try:
         # Clean and vectorize text
         cleaned_text = clean_text_for_sa(text)
+        
+        # Check for empty cleaned text before transformation
+        if not cleaned_text.strip():
+            return 1, 0.0
+
         text_vector = tfidf.transform([cleaned_text])
 
         # Predict and get confidence
